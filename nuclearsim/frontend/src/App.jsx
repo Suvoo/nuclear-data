@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Atom, Info, Terminal } from "lucide-react";
 import ScenarioSelector from "./components/ScenarioSelector.jsx";
+import ScenarioInfo from "./components/ScenarioInfo.jsx";
 import SeveritySlider from "./components/SeveritySlider.jsx";
 import LightingPicker from "./components/LightingPicker.jsx";
 import GenerateButton from "./components/GenerateButton.jsx";
@@ -155,6 +156,14 @@ export default function App() {
                 onChange={setScenario}
                 scenarios={scenarios}
               />
+              <div className="mt-3">
+                <ScenarioInfo
+                  scenarioKey={scenario}
+                  fallbackLabel={
+                    scenarios.find((s) => s.key === scenario)?.label
+                  }
+                />
+              </div>
             </div>
 
             <div>

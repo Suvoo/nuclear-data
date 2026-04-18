@@ -1,0 +1,71 @@
+(.venv) suvoo@Suvodeeps-MacBook-Pro nuclearsim % python pipeline.py corridor_multiple_hazards 4
+/Users/suvoo/Documents/betahack/nuclearsim/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+  video provider: seedance
+[1/4] Generating severity-4 video for 'corridor_multiple_hazards'...
+  prompt: Photorealistic first-person point-of-view from an inspection robot moving slowly down a dim nuclear power plant corridor that contains several independent hazards simultaneously. P...
+  submitted seedance task cgt-20260419043710-sjdln; polling...
+  ...status=running (1s)
+  ...status=running (4s)
+  ...status=running (9s)
+  ...status=running (13s)
+  ...status=running (17s)
+  ...status=running (21s)
+  ...status=running (25s)
+  ...status=running (29s)
+  ...status=running (33s)
+  ...status=running (37s)
+  ...status=running (41s)
+  ...status=running (44s)
+  ...status=running (48s)
+  ...status=running (52s)
+  ...status=running (56s)
+  ...status=running (60s)
+  ...status=running (64s)
+  ...status=running (68s)
+  ...status=running (72s)
+  downloaded video: /Users/suvoo/Documents/betahack/nuclearsim/outputs/corridor_multiple_hazards_sev4_clip.mp4 (1635596 bytes)
+[2/4] Extracting frames...
+  extracted 13 frames (every 10) from 121 total
+[3/4] Annotating 13 frames with qwen3-vl-8b (compound multi-hazard mode)...
+  frame 1/13 (#0): primary=flood_hazard defects=[flood_hazard,corrosion,crack] sev=4 action=alert_operator
+  frame 2/13 (#10): primary=flood_hazard defects=[flood_hazard,gauge_anomaly,corrosion] sev=4 action=alert_operator
+  frame 3/13 (#20): primary=flood_hazard defects=[flood_hazard,gauge_anomaly,corrosion] sev=4 action=alert_operator
+  frame 4/13 (#30): primary=flood_hazard defects=[flood_hazard,gauge_anomaly,corrosion] sev=4 action=alert_operator
+  frame 5/13 (#40): primary=flood_hazard defects=[flood_hazard,gauge_anomaly,corrosion] sev=4 action=alert_operator
+  frame 6/13 (#50): primary=flood_hazard defects=[flood_hazard,gauge_anomaly,corrosion] sev=4 action=alert_operator
+  frame 7/13 (#60): primary=flood_hazard defects=[flood_hazard,gauge_anomaly] sev=4 action=alert_operator
+  frame 8/13 (#70): primary=flood_hazard defects=[flood_hazard,corrosion,gauge_anomaly] sev=4 action=alert_operator
+  frame 9/13 (#80): primary=flood_hazard defects=[flood_hazard,gauge_anomaly,corrosion] sev=4 action=alert_operator
+  frame 10/13 (#90): primary=gauge_anomaly defects=[gauge_anomaly,flood_hazard,corrosion] sev=4 action=alert_operator
+  frame 11/13 (#100): primary=flood_hazard defects=[flood_hazard,gauge_anomaly,corrosion] sev=4 action=alert_operator
+  frame 12/13 (#110): primary=structural_damage defects=[structural_damage,flood_hazard,gauge_anomaly] sev=4 action=alert_operator
+  frame 13/13 (#120): primary=structural_damage defects=[structural_damage,flood_hazard,gauge_anomaly] sev=4 action=alert_operator
+[4/4] Building COCO dataset + quality + sim-to-real...
+  wrote dataset: /Users/suvoo/Documents/betahack/nuclearsim/outputs/corridor_multiple_hazards_sev4_dataset.json
+
+=== NUCLEARSIM COMPLETE ===
+Scenario:         corridor_multiple_hazards (severity 4)
+Video:            /Users/suvoo/Documents/betahack/nuclearsim/outputs/corridor_multiple_hazards_sev4_clip.mp4
+Frames analyzed:  13
+Defects found:    13/13 frames
+Max severity:     4 (serious)
+Action needed:    alert_operator
+  -> robot:       Halt movement, hold position, stream live feed to control room.
+  -> notify:      Immediate — control room alert
+
+--- Dataset QA ---
+Class balance:    0.625 (1.0 = perfectly balanced)
+Mean confidence:  0.943
+Severity cover:   [0, 0, 0, 13, 0] (counts for sev 1..5)
+Production ready: False
+  ! severity_coverage: severities [1, 2, 3, 5] not represented.
+  -> Run a clip at severity 1 to cover the none range.
+  -> Run a clip at severity 2 to cover the minor range.
+  -> Run a clip at severity 3 to cover the moderate range.
+
+--- Sim-to-Real Assessment ---
+Realism score:    0.693 (1.0 = matches reality)
+  ! hazard_co_occurrence: Synthetic compound hazards may be statistically unrealistic (too co-located, too simultaneous).
+  ! gauge_realism: Gauge text may be hallucinated.
+  ! camera_motion: Motion is smooth; real robots jitter.

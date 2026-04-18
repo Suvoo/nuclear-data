@@ -13,6 +13,7 @@ import math
 import os
 import re
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,7 +23,34 @@ import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from scenarios import SCENARIOS, SEVERITY_DESCRIPTORS
+from scenarios import (
+    SCENARIOS,
+    SEVERITY_DESCRIPTORS,
+    SCENARIO_LABELS,
+    resolve_scenario,
+)
+
+# ---------------------------------------------------------------------------
+# Log callback (thread-local so each job gets its own sink)
+# ---------------------------------------------------------------------------
+
+_log_ctx = threading.local()
+
+
+def set_log_callback(cb):
+    """Install a per-thread log sink. Pass None to clear."""
+    _log_ctx.cb = cb
+
+
+def _log(msg: str) -> None:
+    """Print to stdout and forward to the thread-local callback if any."""
+    print(msg, flush=True)
+    cb = getattr(_log_ctx, "cb", None)
+    if cb is not None:
+        try:
+            cb(msg)
+        except Exception:
+            pass
 
 ION_BASE_URL = "https://api.ionrouter.io/v1"
 ION_VIDEO_MODEL = "wan2.2-t2v-general"
@@ -139,7 +167,7 @@ def load_config():
         print("Warning: ION_API_KEY not set; vision annotation will likely fail.")
 
     client = OpenAI(api_key=vision_key, base_url=ION_BASE_URL)
-    print(f"  video provider: {provider}")
+    _log(f"  video provider: {provider}")
     return client, video_key, provider
 
 
@@ -147,10 +175,32 @@ def load_config():
 # Video generation
 # ---------------------------------------------------------------------------
 
-def build_video_prompt(scenario_key: str, severity: int) -> str:
+LIGHTING_MODIFIERS = {
+    "optimal": (
+        "Steady, clean industrial lighting at full brightness. Well-lit scene, "
+        "clear visibility, minimal shadow noise."
+    ),
+    "dim": (
+        "Low-light conditions. The only illumination comes from partially "
+        "failing emergency fluorescent tubes and the robot's mounted "
+        "flashlight. Long shadows, high contrast, cold color temperature."
+    ),
+    "failed": (
+        "Primary lighting has failed. Scene lit only by the robot's harsh "
+        "forward flashlight beam cutting through darkness. Heavy shadows, "
+        "deep blacks, occasional sparks from damaged electrical fixtures."
+    ),
+}
+
+
+def build_video_prompt(
+    scenario_key: str, severity: int, lighting: str = "optimal"
+) -> str:
     scenario = SCENARIOS[scenario_key]
     descriptor = SEVERITY_DESCRIPTORS.get(scenario_key, {}).get(severity, "")
-    return f"{scenario['prompt']} {descriptor}".strip()
+    lighting_mod = LIGHTING_MODIFIERS.get(lighting, "")
+    parts = [scenario["prompt"], descriptor, lighting_mod]
+    return " ".join(p for p in parts if p).strip()
 
 
 def _poll_video(base_url: str, job_id: str, headers: dict) -> str:
@@ -178,7 +228,7 @@ def _poll_video(base_url: str, job_id: str, headers: dict) -> str:
             return video_url
         if status in ("failed", "cancelled"):
             raise RuntimeError(f"Video generation {status}: {pdata}")
-        print(f"  ...status={status} ({int(time.time() - start)}s)")
+        _log(f"  ...status={status} ({int(time.time() - start)}s)")
         time.sleep(POLL_INTERVAL)
 
 
@@ -205,11 +255,11 @@ def _generate_video_ionrouter(prompt: str, api_key: str) -> str:
     job_id = data.get("id") or data.get("job_id")
     if not job_id:
         raise RuntimeError(f"No job id in submit response: {data}")
-    print(f"  submitted ionrouter job {job_id}; polling...")
+    _log(f"  submitted ionrouter job {job_id}; polling...")
     return _poll_video(f"{ION_BASE_URL}/video/generations", job_id, headers)
 
 
-def _generate_video_seedance(prompt: str, api_key: str) -> str:
+def _generate_video_seedance(prompt: str, api_key: str) -> str:  # noqa: E302
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -229,15 +279,19 @@ def _generate_video_seedance(prompt: str, api_key: str) -> str:
     job_id = data.get("id") or data.get("task_id")
     if not job_id:
         raise RuntimeError(f"No task id in Seedance response: {data}")
-    print(f"  submitted seedance task {job_id}; polling...")
+    _log(f"  submitted seedance task {job_id}; polling...")
     return _poll_video(url, job_id, headers)
 
 
 def generate_video(
-    scenario_key: str, severity: int, api_key: str, provider: str
+    scenario_key: str,
+    severity: int,
+    api_key: str,
+    provider: str,
+    lighting: str = "optimal",
 ) -> tuple:
-    prompt = build_video_prompt(scenario_key, severity)
-    print(f"  prompt: {prompt[:180]}{'...' if len(prompt) > 180 else ''}")
+    prompt = build_video_prompt(scenario_key, severity, lighting=lighting)
+    _log(f"  prompt: {prompt[:180]}{'...' if len(prompt) > 180 else ''}")
 
     if provider == "seedance":
         video_url = _generate_video_seedance(prompt, api_key)
@@ -249,7 +303,7 @@ def generate_video(
     dl = requests.get(video_url, timeout=120)
     dl.raise_for_status()
     video_path.write_bytes(dl.content)
-    print(f"  downloaded video: {video_path} ({len(dl.content)} bytes)")
+    _log(f"  downloaded video: {video_path} ({len(dl.content)} bytes)")
     return str(video_path), prompt
 
 
@@ -283,7 +337,7 @@ def extract_frames(video_path: str, scenario_key: str, severity: int, every_n: i
             result.append((idx, str(frame_path.name), b64))
         idx += 1
     cap.release()
-    print(f"  extracted {len(result)} frames (every {every_n}) from {idx} total")
+    _log(f"  extracted {len(result)} frames (every {every_n}) from {idx} total")
     return result
 
 
@@ -819,7 +873,7 @@ def build_coco_dataset(
 
     out_path = OUTPUTS_DIR / f"{scenario_key}_sev{severity}_dataset.json"
     out_path.write_text(json.dumps(dataset, indent=2))
-    print(f"  wrote dataset: {out_path}")
+    _log(f"  wrote dataset: {out_path}")
     return dataset
 
 
@@ -827,104 +881,138 @@ def build_coco_dataset(
 # Orchestration
 # ---------------------------------------------------------------------------
 
-def run_pipeline(scenario_key: str, severity: int = 3):
-    if scenario_key not in SCENARIOS:
-        print(f"Unknown scenario: {scenario_key}")
-        print(f"Available: {list(SCENARIOS.keys())}")
-        sys.exit(1)
-    if severity not in (1, 2, 3, 4, 5):
-        print(f"Severity must be 1-5, got {severity}")
-        sys.exit(1)
+def run_pipeline(
+    scenario_key: str,
+    severity: int = 3,
+    on_log=None,
+    lighting: str = "optimal",
+) -> dict:
+    """Run the full pipeline. Returns the COCO dataset dict.
 
-    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    client, video_key, provider = load_config()
-
-    print(f"[1/4] Generating severity-{severity} video for '{scenario_key}'...")
+    If on_log is provided, every progress line is also delivered to it in
+    addition to stdout. Raises on any pipeline failure.
+    """
+    if on_log is not None:
+        set_log_callback(on_log)
     try:
-        video_path, video_prompt = generate_video(
-            scenario_key, severity, video_key, provider
+        scenario_key = resolve_scenario(scenario_key)
+        if scenario_key not in SCENARIOS:
+            raise ValueError(
+                f"Unknown scenario: {scenario_key}. "
+                f"Available: {list(SCENARIOS.keys())}"
+            )
+        if severity not in (1, 2, 3, 4, 5):
+            raise ValueError(f"Severity must be 1-5, got {severity}")
+
+        OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+
+        client, video_key, provider = load_config()
+
+        _log(
+            f"[1/4] Generating severity-{severity} video for "
+            f"'{scenario_key}' (lighting={lighting})..."
         )
-    except Exception as e:
-        print(f"ERROR: video generation failed: {e}")
-        sys.exit(1)
+        video_path, video_prompt = generate_video(
+            scenario_key, severity, video_key, provider, lighting=lighting
+        )
 
-    print("[2/4] Extracting frames...")
-    frames = extract_frames(video_path, scenario_key, severity, every_n=10)
-    if not frames:
-        print("ERROR: no frames extracted")
-        sys.exit(1)
+        _log("[2/4] Extracting frames...")
+        frames = extract_frames(video_path, scenario_key, severity, every_n=10)
+        if not frames:
+            raise RuntimeError("no frames extracted from video")
 
-    is_compound = SCENARIOS[scenario_key].get("complexity") == "compound"
-    mode = "compound multi-hazard" if is_compound else "single-defect"
-    print(f"[3/4] Annotating {len(frames)} frames with {VISION_MODEL} ({mode} mode)...")
-    annotated = []
-    for i, (frame_num, filename, b64) in enumerate(frames):
-        ann = annotate_frame(client, b64, scenario_key, severity)
-        annotated.append((frame_num, filename, ann))
-        if is_compound:
-            defect_names = ",".join(d["type"] for d in ann.get("defects", [])) or "none"
-            print(
-                f"  frame {i+1}/{len(frames)} (#{frame_num}): "
-                f"primary={ann.get('primary_threat')} defects=[{defect_names}] "
-                f"sev={ann['severity']} action={ann['recommended_action']}"
-            )
-        else:
-            print(
-                f"  frame {i+1}/{len(frames)} (#{frame_num}): "
-                f"{ann['defect_type']} sev={ann['severity']} "
-                f"action={ann['recommended_action']}"
-            )
+        is_compound = SCENARIOS[scenario_key].get("complexity") == "compound"
+        mode = "compound multi-hazard" if is_compound else "single-defect"
+        _log(
+            f"[3/4] Annotating {len(frames)} frames with {VISION_MODEL} "
+            f"({mode} mode)..."
+        )
+        annotated = []
+        for i, (frame_num, filename, b64) in enumerate(frames):
+            ann = annotate_frame(client, b64, scenario_key, severity)
+            annotated.append((frame_num, filename, ann))
+            if is_compound:
+                defect_names = (
+                    ",".join(d["type"] for d in ann.get("defects", [])) or "none"
+                )
+                _log(
+                    f"  frame {i+1}/{len(frames)} (#{frame_num}): "
+                    f"primary={ann.get('primary_threat')} "
+                    f"defects=[{defect_names}] "
+                    f"sev={ann['severity']} action={ann['recommended_action']}"
+                )
+            else:
+                _log(
+                    f"  frame {i+1}/{len(frames)} (#{frame_num}): "
+                    f"{ann['defect_type']} sev={ann['severity']} "
+                    f"action={ann['recommended_action']}"
+                )
 
-    print("[4/4] Building COCO dataset + quality + sim-to-real...")
-    dataset = build_coco_dataset(
-        scenario_key, severity, video_path, video_prompt, annotated
-    )
+        _log("[4/4] Building COCO dataset + quality + sim-to-real...")
+        dataset = build_coco_dataset(
+            scenario_key, severity, video_path, video_prompt, annotated
+        )
+        dataset["_video_path"] = video_path
+        dataset["_frames_dir"] = str(
+            OUTPUTS_DIR / f"{scenario_key}_sev{severity}_frames"
+        )
+        dataset["_dataset_path"] = str(
+            OUTPUTS_DIR / f"{scenario_key}_sev{severity}_dataset.json"
+        )
 
-    s = dataset["summary"]
-    q = dataset["dataset_quality"]
-    r = dataset["sim_to_real_assessment"]
-    sev_max = s["max_severity"]
-    proto = s["highest_risk_protocol"]
+        s = dataset["summary"]
+        q = dataset["dataset_quality"]
+        r = dataset["sim_to_real_assessment"]
+        sev_max = s["max_severity"]
+        proto = s["highest_risk_protocol"]
 
-    print()
-    print("=== NUCLEARSIM COMPLETE ===")
-    print(f"Scenario:         {scenario_key} (severity {severity})")
-    print(f"Video:            {video_path}")
-    print(f"Frames analyzed:  {s['total_frames']}")
-    print(f"Defects found:    {s['defects_detected']}/{s['total_frames']} frames")
-    print(f"Max severity:     {sev_max} ({SEVERITY_LABELS.get(sev_max, '?')})")
-    print(f"Action needed:    {s['highest_risk_action']}")
-    print(f"  -> robot:       {proto['robot_behavior']}")
-    print(f"  -> notify:      {proto['human_notification'] or 'none'}")
-    print()
-    print("--- Dataset QA ---")
-    print(f"Class balance:    {q['class_balance_score']} (1.0 = perfectly balanced)")
-    print(f"Mean confidence:  {q['mean_confidence']}")
-    print(f"Severity cover:   {q['severity_coverage']} (counts for sev 1..5)")
-    print(f"Production ready: {q['production_ready']}")
-    if q.get("warnings"):
-        for k, v in q["warnings"].items():
-            print(f"  ! {k}: {v}")
-    if q.get("recommendations"):
-        for rec in q["recommendations"][:3]:
-            print(f"  -> {rec}")
-    print()
-    print("--- Sim-to-Real Assessment ---")
-    print(f"Realism score:    {r['overall_realism_score']} (1.0 = matches reality)")
-    for rf in r["risk_factors"][:3]:
-        print(f"  ! {rf['factor']}: {rf['issue']}")
+        _log("")
+        _log("=== NUCLEARSIM COMPLETE ===")
+        _log(f"Scenario:         {scenario_key} (severity {severity})")
+        _log(f"Video:            {video_path}")
+        _log(f"Frames analyzed:  {s['total_frames']}")
+        _log(f"Defects found:    {s['defects_detected']}/{s['total_frames']} frames")
+        _log(f"Max severity:     {sev_max} ({SEVERITY_LABELS.get(sev_max, '?')})")
+        _log(f"Action needed:    {s['highest_risk_action']}")
+        _log(f"  -> robot:       {proto['robot_behavior']}")
+        _log(f"  -> notify:      {proto['human_notification'] or 'none'}")
+        _log("")
+        _log("--- Dataset QA ---")
+        _log(f"Class balance:    {q['class_balance_score']} (1.0 = perfectly balanced)")
+        _log(f"Mean confidence:  {q['mean_confidence']}")
+        _log(f"Severity cover:   {q['severity_coverage']} (counts for sev 1..5)")
+        _log(f"Production ready: {q['production_ready']}")
+        if q.get("warnings"):
+            for k, v in q["warnings"].items():
+                _log(f"  ! {k}: {v}")
+        if q.get("recommendations"):
+            for rec in q["recommendations"][:3]:
+                _log(f"  -> {rec}")
+        _log("")
+        _log("--- Sim-to-Real Assessment ---")
+        _log(f"Realism score:    {r['overall_realism_score']} (1.0 = matches reality)")
+        for rf in r["risk_factors"][:3]:
+            _log(f"  ! {rf['factor']}: {rf['issue']}")
+
+        return dataset
+    finally:
+        if on_log is not None:
+            set_log_callback(None)
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if not args:
-        run_pipeline("pipe_crack", 3)
-    elif args[0] == "list":
-        print("Scenarios:")
-        for k, v in SCENARIOS.items():
-            print(f"  {k:30s} [{v.get('complexity','single')}] {v['task']}")
-    else:
-        scenario = args[0]
-        severity = int(args[1]) if len(args) > 1 else 3
-        run_pipeline(scenario, severity)
+    try:
+        if not args:
+            run_pipeline("pipe_crack", 3)
+        elif args[0] == "list":
+            print("Scenarios:")
+            for k, v in SCENARIOS.items():
+                print(f"  {k:30s} [{v.get('complexity','single')}] {v['task']}")
+        else:
+            scenario = args[0]
+            severity = int(args[1]) if len(args) > 1 else 3
+            run_pipeline(scenario, severity)
+    except Exception as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)

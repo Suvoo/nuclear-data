@@ -75,6 +75,47 @@ SCENARIOS = {
     },
 
     # -----------------------------------------------------------------------
+    "weld_inspection": {
+        "prompt": (
+            "Photorealistic first-person point-of-view from an inspection "
+            "robot arm approaching a welded joint between two large "
+            "industrial steel pipes in a nuclear plant maintenance bay. "
+            "The weld bead runs horizontally across the joint, a silvery "
+            "curved ribbon of fused metal with regular ripple pattern. "
+            "Macro-style close focus on the weld. Bright inspection lamp "
+            "illuminates the seam from the side, raking light across the "
+            "metal to reveal texture. Cold, surgical, precise atmosphere. "
+            "No humans anywhere in frame. Cinematic realism, 16:9."
+        ),
+        "environment": "pipe_weld_joint",
+        "task": "weld_integrity_check",
+        "complexity": "single",
+        "expected_defects": ["crack", "corrosion", "structural_damage"],
+    },
+
+    # -----------------------------------------------------------------------
+    "radiation_hotspot": {
+        "prompt": (
+            "Photorealistic first-person point-of-view from an inspection "
+            "robot moving slowly through a reactor containment access "
+            "corridor inside a nuclear power plant. Thick concrete walls, "
+            "massive steel blast doors with yellow-and-black radiation "
+            "trefoil warning symbols, posted hazard signage, and a small "
+            "heads-up overlay in the corner of the frame showing a digital "
+            "Geiger counter readout and a color-coded radiation zone tag "
+            "(GREEN SAFE / YELLOW CAUTION / RED HOT / PURPLE LETHAL). "
+            "Radiation itself is invisible but is signaled visually via the "
+            "HUD, warning tape, and Cherenkov-blue glow from any exposed "
+            "spent fuel pool water. No humans anywhere in frame. Cinematic "
+            "realism, 16:9."
+        ),
+        "environment": "reactor_containment",
+        "task": "radiation_zone_mapping",
+        "complexity": "single",
+        "expected_defects": ["gauge_anomaly", "structural_damage"],
+    },
+
+    # -----------------------------------------------------------------------
     "corridor_multiple_hazards": {
         "prompt": (
             "Photorealistic first-person point-of-view from an inspection "
@@ -238,4 +279,95 @@ SEVERITY_DESCRIPTORS = {
             "Full evacuation conditions."
         ),
     },
+
+    # -----------------------------------------------------------------------
+    "weld_inspection": {
+        1: (
+            "Pristine factory-quality weld bead: uniform silver ripple "
+            "pattern, smooth profile, no porosity, no slag, no discoloration. "
+            "Perfect fusion."
+        ),
+        2: (
+            "Minor cosmetic slag spatter near the weld toe. Bead profile is "
+            "still smooth and uniform. No structural concerns; cleanup "
+            "recommended."
+        ),
+        3: (
+            "Visible pinhole porosity along a short section of the weld "
+            "bead. A few small pits and light surface oxidation. Minor "
+            "undercut on one edge. Moderate defect; flag for NDT review."
+        ),
+        4: (
+            "Clear lack-of-fusion crack running along the weld toe for "
+            "roughly five centimeters. Deep porosity clusters, visible "
+            "oxidation, and discoloration from heat-affected zone damage. "
+            "Serious defect requiring operator alert."
+        ),
+        5: (
+            "Catastrophic weld failure: the joint has partially ruptured. "
+            "The crack has propagated through the bead, fluid seepage "
+            "streaks down the pipe, heavy corrosion surrounds the break. "
+            "Immediate halt and repair required."
+        ),
+    },
+
+    # -----------------------------------------------------------------------
+    "radiation_hotspot": {
+        1: (
+            "Geiger HUD reads background level; zone tag shows GREEN SAFE. "
+            "Corridor is clean, doors closed, no active warnings. Routine "
+            "patrol conditions."
+        ),
+        2: (
+            "Geiger HUD reads slightly above background with occasional "
+            "ticks; zone tag shows YELLOW CAUTION. A single yellow warning "
+            "strip is posted near a sealed access hatch. Minor elevated "
+            "reading, continue with awareness."
+        ),
+        3: (
+            "Geiger HUD shows sustained elevated count-rate; zone tag shows "
+            "YELLOW CAUTION. Posted radiation warning signs on the wall, "
+            "yellow-and-black hazard tape across a side corridor. Moderate "
+            "dose zone; log and continue."
+        ),
+        4: (
+            "Geiger HUD reads high count-rate with rising trend; zone tag "
+            "shows RED HOT. Heavy yellow-and-black hazard tape blocks a "
+            "branch corridor, multiple posted trefoil warnings, a faint "
+            "Cherenkov-blue glow emanates from a partly open spent fuel "
+            "viewing port. Operator alert required."
+        ),
+        5: (
+            "Geiger HUD is pinned at maximum with audible alarm icon; zone "
+            "tag shows PURPLE LETHAL. Red strobe lights pulse overhead, "
+            "a bright Cherenkov-blue glow floods from a breached shielding "
+            "panel, radiation trefoil warnings everywhere. Robot must halt "
+            "and evacuate the zone immediately."
+        ),
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# UI / CLI aliases
+# ---------------------------------------------------------------------------
+
+SCENARIO_ALIASES = {
+    "compound_hazard": "corridor_multiple_hazards",
+}
+
+
+def resolve_scenario(key: str) -> str:
+    """Translate a UI alias to the canonical scenario key if applicable."""
+    return SCENARIO_ALIASES.get(key, key)
+
+
+SCENARIO_LABELS = {
+    "pipe_crack": "Crack Detection",
+    "flooded_basement": "Flood Hazard Assessment",
+    "gauge_anomaly": "Anomaly Detection",
+    "weld_inspection": "Weld Integrity Check",
+    "radiation_hotspot": "Radiation Zone Mapping",
+    "corridor_multiple_hazards": "Multi-Hazard Compound",
+    "compound_hazard": "Multi-Hazard Compound",
 }

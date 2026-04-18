@@ -1,0 +1,421 @@
+{
+  "info": {
+    "description": "NuclearSim Synthetic Inspection Dataset",
+    "version": "1.0",
+    "scenario": "pipe_crack",
+    "generated_at": "2026-04-18T19:52:18.050454+00:00"
+  },
+  "categories": [
+    {
+      "id": 0,
+      "name": "normal"
+    },
+    {
+      "id": 1,
+      "name": "crack"
+    },
+    {
+      "id": 2,
+      "name": "corrosion"
+    },
+    {
+      "id": 3,
+      "name": "flood_hazard"
+    },
+    {
+      "id": 4,
+      "name": "gauge_anomaly"
+    },
+    {
+      "id": 5,
+      "name": "structural_damage"
+    }
+  ],
+  "images": [
+    {
+      "id": 0,
+      "file_name": "frame_000.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 0,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 1,
+      "file_name": "frame_010.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 10,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 2,
+      "file_name": "frame_020.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 20,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 3,
+      "file_name": "frame_030.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 30,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 4,
+      "file_name": "frame_040.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 40,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 5,
+      "file_name": "frame_050.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 50,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 6,
+      "file_name": "frame_060.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 60,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 7,
+      "file_name": "frame_070.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 70,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 8,
+      "file_name": "frame_080.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 80,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 9,
+      "file_name": "frame_090.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 90,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 10,
+      "file_name": "frame_100.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 100,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 11,
+      "file_name": "frame_110.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 110,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    },
+    {
+      "id": 12,
+      "file_name": "frame_120.jpg",
+      "width": 832,
+      "height": 480,
+      "frame_number": 120,
+      "scenario": "pipe_crack",
+      "environment": "pipe_interior_steel"
+    }
+  ],
+  "annotations": [
+    {
+      "id": 0,
+      "image_id": 0,
+      "category_id": 1,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 3,
+        "location_in_frame": "center",
+        "recommended_action": "slow_down",
+        "confidence": 0.85,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 1,
+      "image_id": 1,
+      "category_id": 1,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 3,
+        "location_in_frame": "mid-tunnel",
+        "recommended_action": "slow_down",
+        "confidence": 0.85,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 2,
+      "image_id": 2,
+      "category_id": 2,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 3,
+        "location_in_frame": "mid-ground wall",
+        "recommended_action": "slow_down",
+        "confidence": 0.85,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 3,
+      "image_id": 3,
+      "category_id": 2,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 3,
+        "location_in_frame": "mid-tube",
+        "recommended_action": "slow_down",
+        "confidence": 0.85,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 4,
+      "image_id": 4,
+      "category_id": 1,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 4,
+        "location_in_frame": "mid-tube",
+        "recommended_action": "halt",
+        "confidence": 0.95,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 5,
+      "image_id": 5,
+      "category_id": 2,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 3,
+        "location_in_frame": "mid-ground weld seam",
+        "recommended_action": "slow_down",
+        "confidence": 0.85,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 6,
+      "image_id": 6,
+      "category_id": 1,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 4,
+        "location_in_frame": "center_horizontal",
+        "recommended_action": "alert_operator",
+        "confidence": 0.95,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 7,
+      "image_id": 7,
+      "category_id": 1,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 4,
+        "location_in_frame": "mid-tube",
+        "recommended_action": "halt",
+        "confidence": 0.95,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 8,
+      "image_id": 8,
+      "category_id": 1,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 4,
+        "location_in_frame": "center_horizontal",
+        "recommended_action": "halt",
+        "confidence": 0.97,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 9,
+      "image_id": 9,
+      "category_id": 1,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 4,
+        "location_in_frame": "mid-right wall",
+        "recommended_action": "halt",
+        "confidence": 0.95,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 10,
+      "image_id": 10,
+      "category_id": 2,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 3,
+        "location_in_frame": "right wall near weld line",
+        "recommended_action": "slow_down",
+        "confidence": 0.92,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 11,
+      "image_id": 11,
+      "category_id": 1,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 4,
+        "location_in_frame": "horizontal seam at mid-frame",
+        "recommended_action": "halt",
+        "confidence": 0.95,
+        "defect_detected": true
+      }
+    },
+    {
+      "id": 12,
+      "image_id": 12,
+      "category_id": 1,
+      "bbox": [
+        0,
+        0,
+        832,
+        480
+      ],
+      "area": 399360,
+      "iscrowd": 0,
+      "attributes": {
+        "severity": 4,
+        "location_in_frame": "right wall",
+        "recommended_action": "alert_operator",
+        "confidence": 0.95,
+        "defect_detected": true
+      }
+    }
+  ],
+  "summary": {
+    "total_frames": 13,
+    "defects_detected": 13,
+    "max_severity": 4,
+    "highest_risk_action": "halt"
+  }
+}
